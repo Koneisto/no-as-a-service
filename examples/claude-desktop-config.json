@@ -1,0 +1,26 @@
+{
+  "_comment": "NoaaS MCP Server Configuration for Claude Desktop",
+  "_instructions": [
+    "1. Clone the repo and run: npm install && npm run mcp:build",
+    "2. Get the absolute path by running: pwd (while in the repo directory)",
+    "3. Replace /YOUR/PATH/HERE below with your actual path",
+    "4. Save this config to the appropriate location for your OS",
+    "5. Restart Claude Desktop completely (quit the app, not just close window)"
+  ],
+  "_config_locations": {
+    "macOS": "~/Library/Application Support/Claude/claude_desktop_config.json",
+    "Windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
+    "Linux": "~/.config/Claude/claude_desktop_config.json"
+  },
+  "mcpServers": {
+    "noaas": {
+      "command": "node",
+      "args": [
+        "/YOUR/PATH/HERE/no-as-a-service/build/mcp-server.js"
+      ],
+      "env": {
+        "API_BASE_URL": "https://api.mcp-for-no.com"
+      }
+    }
+  }
+}
