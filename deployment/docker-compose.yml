@@ -1,0 +1,43 @@
+services:
+  noaas:
+    image: noaas:latest
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Required
+      NODE_ENV: production
+      PORT: 3000
+
+      # Security settings
+      TRUST_PROXY: 1
+      CORS_ORIGIN: "*"  # Change to your domain in production
+
+      # Rate limiting
+      RATE_LIMIT_MAX: 60
+      RATE_LIMIT_WINDOW_MS: 60000
+
+      # Optional
+      REASONS_FILE_PATH: ./data/reasons.json
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    # Resource limits (optional)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    restart: unless-stopped

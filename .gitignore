@@ -1,0 +1,75 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Personal guides (not for public repo)
+ANTTIS_GUIDE.md
+VALIDATION_REPORT.md
+CUSTOM_DOMAIN_SETUP.md
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Wrangler
+.wrangler/
+deployment/wrangler.toml
+wrangler.toml.backup
+dist/
+.dev.vars
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Build outputs
+*.tsbuildinfo
+build/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Local development
+.cache/
