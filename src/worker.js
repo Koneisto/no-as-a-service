@@ -38,6 +38,14 @@ const DAILY_LIMIT = {
   warnThreshold: 0.9, // Warn at 90% usage (85,500 requests)
 };
 
+// In-memory cache for reasons data (persists across requests in same Worker instance)
+// This dramatically reduces KV read operations (from ~100k/day to ~1-2/day)
+let reasonsCache = {
+  data: null,
+  timestamp: 0,
+  ttl: 3600000, // 1 hour in milliseconds
+};
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -271,13 +279,29 @@ async function checkRateLimit(request, env) {
   return null;
 }
 
-// Get reasons from KV
+// Get reasons from KV with in-memory caching
+// This reduces KV reads from ~100k/day to just 1-2 per Worker instance
 async function getReasons(env) {
+  const now = Date.now();
+
+  // Check if cache is valid
+  if (reasonsCache.data && (now - reasonsCache.timestamp) < reasonsCache.ttl) {
+    return reasonsCache.data;
+  }
+
+  // Cache miss or expired - fetch from KV
   const cached = await env.REASONS_KV.get('reasons', { type: 'text' });
   if (!cached) {
     throw new Error('Reasons not found in KV storage');
   }
-  return JSON.parse(cached);
+
+  const reasons = JSON.parse(cached);
+
+  // Update cache
+  reasonsCache.data = reasons;
+  reasonsCache.timestamp = now;
+
+  return reasons;
 }
 
 // Get daily usage stats for headers

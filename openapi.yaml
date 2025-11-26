@@ -1,0 +1,628 @@
+openapi: 3.0.3
+info:
+  title: No-as-a-Service API
+  description: |
+    A JSON-RPC 2.0 API providing 1,000+ creative ways to decline requests.
+    Features polite, humorous, professional, and creative rejection responses.
+  version: 1.0.0
+  contact:
+    name: No-as-a-Service
+    url: https://mcp-for-no.com
+  license:
+    name: MIT
+    url: https://github.com/Koneisto/no-as-a-service/blob/main/LICENSE
+
+servers:
+  - url: https://api.mcp-for-no.com
+    description: Production API
+
+tags:
+  - name: Health
+    description: Service health monitoring
+  - name: Tools
+    description: Core API tools for getting rejection responses
+  - name: Resources
+    description: Resource management endpoints
+  - name: Prompts
+    description: Prompt management endpoints
+  - name: Session
+    description: Session management
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Returns service health status and daily usage statistics
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, warning]
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                  service:
+                    type: string
+                    example: noaas-cloudflare-workers
+                  edge_location:
+                    type: string
+                    example: global
+                  daily_usage:
+                    type: object
+                    properties:
+                      requests_today:
+                        type: integer
+                        example: 1234
+                      limit:
+                        type: integer
+                        example: 95000
+                      remaining:
+                        type: integer
+                        example: 93766
+                      percent_used:
+                        type: number
+                        example: 1.3
+                      resets_at:
+                        type: string
+                        format: date-time
+                  warning:
+                    type: string
+                    example: Approaching daily limit (90% used)
+
+  /v1/server:
+    get:
+      tags:
+        - Session
+      summary: Get server information
+      description: Returns server name, version, and capabilities
+      operationId: getServerInfo
+      responses:
+        '200':
+          description: Server information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: NoaasServer
+                      version:
+                        type: string
+                        example: 1.0.0
+                      capabilities:
+                        type: array
+                        items:
+                          type: string
+                        example: [tools, resources, prompts]
+
+  /v1/context:
+    get:
+      tags:
+        - Session
+      summary: Get context information
+      description: Returns a random rejection reason as context
+      operationId: getContext
+      responses:
+        '200':
+          description: Context information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  context:
+                    type: object
+                    properties:
+                      rejection_reason:
+                        type: string
+                      source:
+                        type: string
+                        example: noaas
+                      type:
+                        type: string
+                        example: rejection-humor
+                  metadata:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      description:
+                        type: string
+                      license:
+                        type: string
+                      provider:
+                        type: string
+                      update:
+                        type: string
+                        format: date-time
+
+  /v1/tools/list:
+    post:
+      tags:
+        - Tools
+      summary: List available tools
+      description: Returns list of available API tools with their parameters
+      operationId: listTools
+      responses:
+        '200':
+          description: List of available tools
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    properties:
+                      tools:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            description:
+                              type: string
+                            parameters:
+                              type: object
+
+  /v1/tools/call:
+    post:
+      tags:
+        - Tools
+      summary: Call a tool
+      description: |
+        Execute a tool method. Available methods:
+        - `getRandomNo`: Get a random rejection response
+        - `getNoCount`: Get total count of available rejections
+      operationId: callTool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - method
+              properties:
+                method:
+                  type: string
+                  enum: [getRandomNo, getNoCount]
+                  description: The tool method to call
+                params:
+                  type: object
+                  properties:
+                    category:
+                      type: string
+                      enum: [polite, humorous, professional, creative]
+                      description: Optional category filter for getRandomNo
+            examples:
+              getRandomNo:
+                summary: Get random rejection
+                value:
+                  method: getRandomNo
+                  params:
+                    category: humorous
+              getRandomNoNoCategory:
+                summary: Get random rejection (any category)
+                value:
+                  method: getRandomNo
+              getNoCount:
+                summary: Get count of rejections
+                value:
+                  method: getNoCount
+      responses:
+        '200':
+          description: Successful tool execution
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    oneOf:
+                      - properties:
+                          response:
+                            type: string
+                            description: A rejection response (for getRandomNo)
+                            example: I'd love to say yes, but my calendar is allergic to that date.
+                      - properties:
+                          count:
+                            type: integer
+                            description: Total count of rejections (for getNoCount)
+                            example: 1021
+              examples:
+                getRandomNoResponse:
+                  summary: Random rejection response
+                  value:
+                    jsonrpc: '2.0'
+                    result:
+                      response: I'd love to say yes, but my calendar is allergic to that date.
+                getNoCountResponse:
+                  summary: Count response
+                  value:
+                    jsonrpc: '2.0'
+                    result:
+                      count: 1021
+        '400':
+          description: Bad request - invalid JSON or missing method
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSONRPCError'
+              examples:
+                parseError:
+                  summary: Invalid JSON
+                  value:
+                    jsonrpc: '2.0'
+                    error:
+                      code: -32700
+                      message: 'Parse error: Invalid JSON'
+                invalidParams:
+                  summary: Missing method parameter
+                  value:
+                    jsonrpc: '2.0'
+                    error:
+                      code: -32602
+                      message: 'Invalid params: method is required'
+        '404':
+          description: Method not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSONRPCError'
+              example:
+                jsonrpc: '2.0'
+                error:
+                  code: -32601
+                  message: Method not found
+        '429':
+          description: Rate limit exceeded
+          headers:
+            RateLimit-Limit:
+              schema:
+                type: integer
+              description: The rate limit ceiling (30 requests per minute)
+            RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Number of requests remaining in the current window
+            RateLimit-Reset:
+              schema:
+                type: integer
+              description: Seconds until the rate limit resets
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds to wait before retrying
+            X-Daily-Limit:
+              schema:
+                type: integer
+              description: Daily request limit (95000)
+            X-Daily-Remaining:
+              schema:
+                type: integer
+              description: Remaining daily requests
+            X-Daily-Reset:
+              schema:
+                type: integer
+              description: Seconds until daily limit resets
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      error:
+                        type: string
+                        example: Too many requests, please try again later. (30 reqs/min/IP)
+                  - type: object
+                    properties:
+                      error:
+                        type: string
+                      message:
+                        type: string
+                      limit:
+                        type: integer
+                      current:
+                        type: integer
+                      resetAt:
+                        type: string
+                        format: date-time
+                      resetIn:
+                        type: string
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSONRPCError'
+              example:
+                jsonrpc: '2.0'
+                error:
+                  code: -32000
+                  message: 'Service unavailable: No rejection reasons loaded'
+
+  /v1/resources/list:
+    post:
+      tags:
+        - Resources
+      summary: List available resources
+      description: Returns list of available resources
+      operationId: listResources
+      responses:
+        '200':
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    properties:
+                      resources:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            description:
+                              type: string
+
+  /v1/resources/get:
+    post:
+      tags:
+        - Resources
+      summary: Get a resource
+      description: Retrieve a specific resource by name
+      operationId: getResource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  enum: [no_responses, about]
+            examples:
+              noResponses:
+                summary: Get rejection responses sample
+                value:
+                  name: no_responses
+              about:
+                summary: Get API information
+                value:
+                  name: about
+      responses:
+        '200':
+          description: Resource content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    properties:
+                      content:
+                        type: object
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSONRPCError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSONRPCError'
+
+  /v1/prompts/list:
+    post:
+      tags:
+        - Prompts
+      summary: List available prompts
+      description: Returns list of available prompt templates
+      operationId: listPrompts
+      responses:
+        '200':
+          description: List of prompts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    properties:
+                      prompts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            description:
+                              type: string
+                            template:
+                              type: string
+
+  /v1/prompts/get:
+    post:
+      tags:
+        - Prompts
+      summary: Get a prompt template
+      description: Retrieve a specific prompt template by name
+      operationId: getPrompt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  enum: [rejection_response, explain_no]
+      responses:
+        '200':
+          description: Prompt template
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    properties:
+                      template:
+                        type: string
+                      variables:
+                        type: object
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSONRPCError'
+        '404':
+          description: Prompt not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSONRPCError'
+
+  /v1/initialize:
+    post:
+      tags:
+        - Session
+      summary: Initialize session
+      description: Initialize a new API session
+      operationId: initialize
+      responses:
+        '200':
+          description: Session initialized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    properties:
+                      session_id:
+                        type: string
+                      message:
+                        type: string
+
+  /v1/shutdown:
+    post:
+      tags:
+        - Session
+      summary: Shutdown session
+      description: Shutdown and cleanup session resources
+      operationId: shutdown
+      responses:
+        '200':
+          description: Session shutdown successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+
+components:
+  schemas:
+    JSONRPCError:
+      type: object
+      properties:
+        jsonrpc:
+          type: string
+          enum: ['2.0']
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              description: |
+                Error code:
+                - -32700: Parse error
+                - -32600: Invalid request
+                - -32601: Method not found
+                - -32602: Invalid params
+                - -32603: Internal error
+                - -32000: Server error
+            message:
+              type: string
+              description: Error message
+
+  securitySchemes: {}
+
+security: []
+
+x-rate-limits:
+  per-ip:
+    limit: 30
+    window: 60
+    unit: seconds
+  daily:
+    limit: 95000
+    window: 86400
+    unit: seconds
