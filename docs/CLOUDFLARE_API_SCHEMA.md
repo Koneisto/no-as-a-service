@@ -4,7 +4,7 @@ This guide explains how to use the OpenAPI schema with Cloudflare's security fea
 
 ## Schema File
 
-- **Location**: `openapi.yaml`
+- **Location**: `docs/api/openapi.yaml`
 - **Format**: OpenAPI 3.0.3
 - **Validation**: ✅ Valid (tested with swagger-cli)
 
@@ -17,7 +17,7 @@ This guide explains how to use the OpenAPI schema with Cloudflare's security fea
 2. Select your account and domain
 3. Go to **Security** → **API Gateway**
 4. Click **Add Schema**
-5. Upload `openapi.yaml`
+5. Upload `docs/api/openapi.yaml`
 6. Set the base path to `/`
 
 **Via API:**
@@ -29,7 +29,7 @@ API_TOKEN="your-api-token"
 curl -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/api_gateway/schemas" \
   -H "Authorization: Bearer ${API_TOKEN}" \
   -H "Content-Type: application/json" \
-  --data-binary @openapi.yaml
+  --data-binary @docs/api/openapi.yaml
 ```
 
 ### 2. Enable Schema Validation
@@ -179,8 +179,8 @@ To restrict CORS via Cloudflare:
 
 When you update the API:
 
-1. **Update** `openapi.yaml`
-2. **Validate** with: `npx @apidevtools/swagger-cli validate openapi.yaml`
+1. **Update** `docs/api/openapi.yaml`
+2. **Validate** with: `npx @apidevtools/swagger-cli validate docs/api/openapi.yaml`
 3. **Re-upload** to Cloudflare API Gateway
 4. **Test** with sample requests
 
@@ -221,7 +221,7 @@ done
 
 ### Schema Upload Fails
 
-- Ensure the YAML is valid: `npx @apidevtools/swagger-cli validate openapi.yaml`
+- Ensure the YAML is valid: `npx @apidevtools/swagger-cli validate docs/api/openapi.yaml`
 - Check file size (must be < 5MB)
 - Verify OpenAPI version is 3.0.x or 3.1.x
 

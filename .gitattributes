@@ -1,0 +1,9 @@
+# Tell GitHub this is primarily a JavaScript/TypeScript project
+# Exclude HTML from language statistics
+*.html linguist-documentation
+
+# Mark documentation files
+*.md linguist-documentation
+
+# Mark API specs as documentation
+docs/api/* linguist-documentation
