@@ -243,6 +243,66 @@ If it doesn't work, check your config file for typos.
 - Ensure Node.js is installed: `node --version`
 - Ensure you restarted Claude Desktop completely
 
+## Use with Cursor IDE (MCP)
+
+Cursor also supports MCP servers. Same local installation requirement, different config file.
+
+### Prerequisites
+
+Same as Claude Desktop - Node.js (v18+) and Git. If you already cloned the repo for Claude Desktop, skip to Configuration.
+
+### Installation
+
+If you haven't already:
+
+```bash
+cd ~
+git clone https://github.com/Koneisto/no-as-a-service.git
+cd no-as-a-service
+npm install
+npm run mcp:build
+pwd
+```
+
+Note the path from `pwd` - you'll need it.
+
+### Cursor Configuration
+
+**1. Find or create your config file:**
+
+- **Global (all projects):** `~/.cursor/mcp.json`
+- **Project-specific:** `<project-root>/.cursor/mcp.json`
+
+**2. Add the MCP server configuration:**
+
+Replace `/YOUR/PATH/HERE` with your actual path:
+
+```json
+{
+  "mcpServers": {
+    "noaas": {
+      "command": "node",
+      "args": [
+        "/YOUR/PATH/HERE/no-as-a-service/build/mcp-server.js"
+      ],
+      "env": {
+        "API_BASE_URL": "https://api.mcp-for-no.com"
+      }
+    }
+  }
+}
+```
+
+**3. Restart Cursor**
+
+Close and reopen Cursor. The MCP server should now be available.
+
+### Available Tools
+
+Same as Claude Desktop:
+- **getRandomNo** - Get a creative rejection (optional category: polite, humorous, professional, creative)
+- **getNoCount** - Get the total count (1,021)
+
 ## API Usage (Direct HTTP)
 
 You can also use the REST API directly:
