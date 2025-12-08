@@ -14,47 +14,39 @@ NoaaS is a **REST API service** with an **MCP server wrapper** that provides cre
 
 ## Architecture
 
-```mermaid
-graph TB
-    subgraph "REST API (Primary Service)"
-        API[REST API<br/>JSON-RPC 2.0]
-        EXPRESS[Node.js/Express<br/>src/index.js]
-        WORKER[Cloudflare Workers<br/>src/worker.js]
-        DOCKER[Docker<br/>Container]
-
-        API --> EXPRESS
-        API --> WORKER
-        API --> DOCKER
-    end
-
-    subgraph "API Clients"
-        WEB[Web Apps<br/>Mobile Apps]
-        DIRECT[Direct API Calls<br/>curl, fetch, Python]
-    end
-
-    subgraph "MCP Integration"
-        MCP[MCP Server<br/>src/mcp-server.ts<br/>stdio transport]
-        CLAUDE[Claude Desktop]
-    end
-
-    DATA[(Data<br/>reasons.json<br/>1000+ responses)]
-
-    WEB -->|HTTP| API
-    DIRECT -->|HTTP| API
-    MCP -->|HTTP| API
-    CLAUDE -->|stdio| MCP
-    API --> DATA
-
-    style API fill:#3b82f6,stroke:#2563eb,color:#fff
-    style MCP fill:#06b6d4,stroke:#0891b2,color:#fff
-    style CLAUDE fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style DATA fill:#10b981,stroke:#059669,color:#fff
+```
+                     REST API (Primary Service)
+    +-------------+  +-------------+  +-------------+
+    |   Express   |  | Cloudflare  |  |   Docker    |
+    |  (Node.js)  |  |   Workers   |  |  Container  |
+    +-------------+  +-------------+  +-------------+
+            |              |              |
+            +--------------+--------------+
+                           |
+                     reasons.json
+                   (1000+ responses)
+                           |
+         +-----------------+-----------------+
+         |                 |                 |
+       HTTP              HTTP              HTTP
+         |                 |                 |
+    +----+----+      +-----+-----+     +-----+-----+
+    |Web Apps |      |curl/fetch |     |MCP Server |
+    | Mobile  |      |  Python   |     |  (stdio)  |
+    +---------+      +-----------+     +-----+-----+
+                                             |
+                                           stdio
+                                             |
+                                    +-----------------+
+                                    | Claude Desktop  |
+                                    | Cursor IDE      |
+                                    +-----------------+
 ```
 
 **Key Points:**
 - **REST API** is the primary service with all business logic
-- **MCP Server** is a thin stdio wrapper that bridges Claude Desktop to the REST API
-- This architecture serves both traditional API clients and Claude Desktop simultaneously
+- **MCP Server** is a thin stdio wrapper that bridges AI assistants to the REST API
+- Works with Claude Desktop, Cursor, and other MCP-compatible clients
 
 **Response Categories:**
 

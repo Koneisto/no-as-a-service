@@ -24,6 +24,14 @@
   },
   "author": "hotheadhacker",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Koneisto/no-as-a-service.git"
+  },
+  "homepage": "https://github.com/Koneisto/no-as-a-service",
+  "bugs": {
+    "url": "https://github.com/Koneisto/no-as-a-service/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.22.0",
     "cors": "^2.8.5",
