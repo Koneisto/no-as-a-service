@@ -1,6 +1,12 @@
 # No-as-a-Service
 
+[![npm version](https://img.shields.io/npm/v/no-as-service.svg)](https://www.npmjs.com/package/no-as-service)
+[![CI](https://github.com/Koneisto/no-as-a-service/actions/workflows/ci.yml/badge.svg)](https://github.com/Koneisto/no-as-a-service/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 > Because saying "no" apparently requires an API now.
+
+**Like this project?** Give it a ⭐ on GitHub!
 
 An API service providing 1,000+ creative ways to decline requests. For those who find saying "no" requires more architectural complexity than it deserves, or who simply appreciate the precision of professionally crafted rejection.
 
@@ -498,7 +504,7 @@ A: Someone had to. And apparently, it was us. You're welcome, we suppose.
 
 ## License
 
-📄 MIT — do whatever, just don't say yes when you should say no.
+📄 MIT — do whatever, just don't say yes when you should say no. Attribution appreciated but not required.
 
 ## Credits
 
