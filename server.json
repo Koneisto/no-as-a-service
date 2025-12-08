@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "name": "io.github.Koneisto/no-as-a-service",
+  "description": "1000+ creative ways to say no. Polite, humorous, professional rejection responses.",
+  "repository": {
+    "url": "https://github.com/Koneisto/no-as-a-service",
+    "source": "github"
+  },
+  "version": "1.0.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "no-as-service",
+      "version": "1.0.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": []
+    }
+  ]
+}

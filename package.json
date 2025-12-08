@@ -1,6 +1,7 @@
 {
   "name": "no-as-service",
-  "version": "1.0.1",
+  "version": "1.0.2",
+  "mcpName": "io.github.Koneisto/no-as-a-service",
   "description": "A lightweight API that returns random rejection or no reasons.",
   "type": "module",
   "main": "src/index.js",

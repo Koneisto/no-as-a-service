@@ -76,3 +76,4 @@ temp/
 
 # Local development
 .cache/
+.mcpregistry_*

@@ -1,0 +1,23 @@
+# Development files
+.env
+.env.*
+.wrangler/
+.claude/
+.mcpregistry_*
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Deployment configs
+deployment/
+
+# Scripts
+scripts/
+
+# Examples
+examples/
+
+# OS files
+.DS_Store
