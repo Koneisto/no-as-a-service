@@ -31,13 +31,6 @@ const RATE_LIMIT = {
   windowMs: 60000, // 1 minute
 };
 
-// Daily limit configuration (to stay within free tier)
-const DAILY_LIMIT = {
-  enabled: true, // Set to false to disable daily limit
-  maxRequests: 95000, // Set below 100k to have buffer (95k safe limit)
-  warnThreshold: 0.9, // Warn at 90% usage (85,500 requests)
-};
-
 // In-memory cache for reasons data (persists across requests in same Worker instance)
 // This dramatically reduces KV read operations (from ~100k/day to ~1-2/day)
 let reasonsCache = {
@@ -45,6 +38,11 @@ let reasonsCache = {
   timestamp: 0,
   ttl: 3600000, // 1 hour in milliseconds
 };
+
+// In-memory rate limiting per IP (no KV puts!)
+// Note: This is per-isolate, so rate limits are approximate across edge locations,
+// but eliminates KV put operations entirely
+const rateLimitCache = new Map();
 
 export default {
   async fetch(request, env, ctx) {
@@ -59,25 +57,16 @@ export default {
       });
     }
 
-    // Daily limit check (to stay within free tier)
-    const dailyLimitResponse = await checkDailyLimit(env);
-    if (dailyLimitResponse) {
-      return dailyLimitResponse;
-    }
-
-    // Rate limiting check (per-IP)
-    const rateLimitResponse = await checkRateLimit(request, env);
+    // Rate limiting check (per-IP, in-memory)
+    const rateLimitResponse = checkRateLimit(request);
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
 
-    // Increment daily counter (fire and forget)
-    ctx.waitUntil(incrementDailyCounter(env));
-
     try {
       // Route handlers
       if (path === '/health') {
-        return await handleHealth(env);
+        return handleHealth();
       }
 
       if (path === '/v1/server' && request.method === 'GET') {
@@ -141,111 +130,25 @@ export default {
   },
 };
 
-// Daily limit check (to stay within Cloudflare free tier)
-async function checkDailyLimit(env) {
-  if (!DAILY_LIMIT.enabled) {
-    return null;
-  }
-
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  const key = `daily:${today}`;
-
-  const data = await env.RATE_LIMIT_KV.get(key, { type: 'json' });
-
-  if (!data) {
-    // First request today
-    return null;
-  }
-
-  const { count } = data;
-  const percentUsed = count / DAILY_LIMIT.maxRequests;
-
-  // Check if limit exceeded
-  if (count >= DAILY_LIMIT.maxRequests) {
-    const tomorrow = new Date();
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-    tomorrow.setUTCHours(0, 0, 0, 0);
-    const resetIn = Math.ceil((tomorrow.getTime() - Date.now()) / 1000);
-
-    return jsonResponse(
-      {
-        error: 'Daily request limit reached',
-        message: `Service has reached its daily limit of ${DAILY_LIMIT.maxRequests} requests. This helps keep the service free!`,
-        limit: DAILY_LIMIT.maxRequests,
-        current: count,
-        resetAt: tomorrow.toISOString(),
-        resetIn: `${Math.floor(resetIn / 3600)}h ${Math.floor((resetIn % 3600) / 60)}m`,
-      },
-      {
-        status: 429,
-        headers: {
-          'X-Daily-Limit': DAILY_LIMIT.maxRequests.toString(),
-          'X-Daily-Remaining': '0',
-          'X-Daily-Reset': resetIn.toString(),
-          'Retry-After': resetIn.toString(),
-        },
-      }
-    );
-  }
-
-  return null;
-}
-
-// Increment daily request counter
-async function incrementDailyCounter(env) {
-  if (!DAILY_LIMIT.enabled) {
-    return;
-  }
-
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  const key = `daily:${today}`;
-
-  const data = await env.RATE_LIMIT_KV.get(key, { type: 'json' });
-
-  if (!data) {
-    // First request today
-    await env.RATE_LIMIT_KV.put(
-      key,
-      JSON.stringify({ count: 1, date: today }),
-      { expirationTtl: 86400 * 2 } // Keep for 2 days
-    );
-  } else {
-    // Increment counter
-    data.count++;
-    await env.RATE_LIMIT_KV.put(
-      key,
-      JSON.stringify(data),
-      { expirationTtl: 86400 * 2 }
-    );
-  }
-}
-
-// Rate limiting using Workers KV
-async function checkRateLimit(request, env) {
+// In-memory rate limiting (no KV operations)
+function checkRateLimit(request) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const key = `ratelimit:${ip}`;
-
-  // Get current rate limit data
-  const data = await env.RATE_LIMIT_KV.get(key, { type: 'json' });
   const now = Date.now();
 
-  if (!data) {
-    // First request from this IP
-    await env.RATE_LIMIT_KV.put(
-      key,
-      JSON.stringify({ count: 1, resetAt: now + RATE_LIMIT.windowMs }),
-      { expirationTtl: 60 }
-    );
-    return null;
+  // Clean up expired entries periodically (every ~100 requests)
+  if (Math.random() < 0.01) {
+    for (const [key, data] of rateLimitCache) {
+      if (now > data.resetAt) {
+        rateLimitCache.delete(key);
+      }
+    }
   }
 
-  // Check if window has expired
-  if (now > data.resetAt) {
-    await env.RATE_LIMIT_KV.put(
-      key,
-      JSON.stringify({ count: 1, resetAt: now + RATE_LIMIT.windowMs }),
-      { expirationTtl: 60 }
-    );
+  const data = rateLimitCache.get(ip);
+
+  if (!data || now > data.resetAt) {
+    // First request or window expired
+    rateLimitCache.set(ip, { count: 1, resetAt: now + RATE_LIMIT.windowMs });
     return null;
   }
 
@@ -270,12 +173,6 @@ async function checkRateLimit(request, env) {
 
   // Increment counter
   data.count++;
-  await env.RATE_LIMIT_KV.put(
-    key,
-    JSON.stringify(data),
-    { expirationTtl: 60 }
-  );
-
   return null;
 }
 
@@ -304,25 +201,6 @@ async function getReasons(env) {
   return reasons;
 }
 
-// Get daily usage stats for headers
-async function getDailyUsageHeaders(env) {
-  if (!DAILY_LIMIT.enabled) {
-    return {};
-  }
-
-  const today = new Date().toISOString().split('T')[0];
-  const key = `daily:${today}`;
-  const data = await env.RATE_LIMIT_KV.get(key, { type: 'json' });
-
-  const count = data ? data.count : 0;
-  const remaining = Math.max(0, DAILY_LIMIT.maxRequests - count);
-
-  return {
-    'X-Daily-Limit': DAILY_LIMIT.maxRequests.toString(),
-    'X-Daily-Remaining': remaining.toString(),
-    'X-Daily-Used': count.toString(),
-  };
-}
 
 // Helper to create JSON responses
 function jsonResponse(data, options = {}) {
@@ -340,40 +218,13 @@ function jsonResponse(data, options = {}) {
 }
 
 // Health check handler
-async function handleHealth(env) {
-  const health = {
+function handleHealth() {
+  return jsonResponse({
     status: 'ok',
     timestamp: new Date().toISOString(),
     service: 'noaas-cloudflare-workers',
     edge_location: 'global',
-  };
-
-  // Add daily usage stats if enabled
-  if (DAILY_LIMIT.enabled) {
-    const today = new Date().toISOString().split('T')[0];
-    const key = `daily:${today}`;
-    const data = await env.RATE_LIMIT_KV.get(key, { type: 'json' });
-
-    const count = data ? data.count : 0;
-    const remaining = DAILY_LIMIT.maxRequests - count;
-    const percentUsed = (count / DAILY_LIMIT.maxRequests) * 100;
-
-    health.daily_usage = {
-      requests_today: count,
-      limit: DAILY_LIMIT.maxRequests,
-      remaining: remaining,
-      percent_used: Math.round(percentUsed * 100) / 100,
-      resets_at: new Date(new Date().setUTCHours(24, 0, 0, 0)).toISOString(),
-    };
-
-    // Add warning if approaching limit
-    if (percentUsed >= DAILY_LIMIT.warnThreshold * 100) {
-      health.status = 'warning';
-      health.warning = `Approaching daily limit (${Math.round(percentUsed)}% used)`;
-    }
-  }
-
-  return jsonResponse(health);
+  });
 }
 
 // Server info handler
